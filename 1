@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letras cayendo con eliminación al presionar teclas y límite de pantalla</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #f0f0f0;
+    }
+
+    .letra {
+        position: absolute;
+        font-size: 24px;
+    }
+</style>
+</head>
+<body>
+<script>
+    const numLetras = 20; // Número de letras a mostrar
+    const velocidad = 0.3; // Velocidad de caída (1 es la velocidad normal)
+    const espaciado = 30; // Espaciado entre letras
+
+    let letras = [];
+    let posicionesOcupadas = [];
+
+    function configuracion() {
+        for (let i = 0; i < numLetras; i++) {
+            const letra = document.createElement('div');
+            letra.className = 'letra';
+            letra.innerText = obtenerLetraAleatoria();
+            colocarLetra(letra);
+            letras.push(letra);
+            document.body.appendChild(letra);
+        }
+
+        // Event listener para detectar cuando se presiona una tecla
+        document.addEventListener('keydown', eliminarLetra);
+    }
+
+    function obtenerLetraAleatoria() {
+        const codigoCaracter = Math.random() < 0.5 ? // 50% probabilidad de letra mayúscula o minúscula
+            Math.floor(Math.random() * (90 - 65 + 1)) + 65 : // Mayúscula
+            Math.floor(Math.random() * (122 - 97 + 1)) + 97; // Minúscula
+        return String.fromCharCode(codigoCaracter);
+    }
+
+    function colocarLetra(letra) {
+        let arriba = -Math.random() * window.innerHeight;
+        let izquierda = Math.random() * window.innerWidth;
+        while (esPosicionOcupada(izquierda, arriba)) {
+            arriba = -Math.random() * window.innerHeight;
+            izquierda = Math.random() * window.innerWidth;
+        }
+        letra.style.left = `${izquierda}px`;
+        letra.style.top = `${arriba}px`;
+        posicionesOcupadas.push({ izquierda, arriba });
+    }
+
+    function esPosicionOcupada(izquierda, arriba) {
+        for (let pos of posicionesOcupadas) {
+            if (Math.abs(pos.izquierda - izquierda) < espaciado && Math.abs(pos.arriba - arriba) < espaciado) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function eliminarLetra(evento) {
+    const letraPresionada = evento.key.toUpperCase(); // Obtenemos la tecla presionada en mayúscula
+
+    // Buscamos y eliminamos la letra más baja (mayúscula o minúscula) correspondiente a la tecla presionada
+    let indexEliminar = -1;
+    let posYMasBajo = -1;
+    for (let i = 0; i < letras.length; i++) {
+        if (letras[i].innerText.toUpperCase() === letraPresionada) {
+            const posYLetra = parseFloat(letras[i].style.top);
+            if (posYLetra > posYMasBajo) {
+                posYMasBajo = posYLetra;
+                indexEliminar = i;
+            }
+        }
+    }
+
+    if (indexEliminar !== -1) {
+        const letraAEliminar = letras[indexEliminar];
+        const indexAEliminar = posicionesOcupadas.findIndex(pos => pos.izquierda === parseFloat(letraAEliminar.style.left) && pos.arriba === parseFloat(letraAEliminar.style.top));
+        letras.splice(indexEliminar, 1);
+        posicionesOcupadas.splice(indexAEliminar, 1);
+        document.body.removeChild(letraAEliminar);
+    }
+}
+
+
+    function actualizar() {
+        for (let i = 0; i < letras.length; i++) {
+            const letra = letras[i];
+            const nuevaPosicionY = parseFloat(letra.style.top) + velocidad;
+
+            // Verificar si la nueva posición de la letra supera los límites superior o inferior de la pantalla
+            if (nuevaPosicionY > window.innerHeight) {
+                letra.innerText = obtenerLetraAleatoria();
+                colocarLetra(letra);
+            } else {
+                letra.style.top = `${nuevaPosicionY}px`;
+            }
+        }
+        requestAnimationFrame(actualizar);
+    }
+
+    window.onload = () => {
+        configuracion();
+        actualizar();
+    };
+</script>
+</body>
+</html>
